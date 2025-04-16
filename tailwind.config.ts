@@ -52,6 +52,17 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Custom colors for the Lost & Found app
+				'lost': {
+					light: '#FEF3F2',
+					DEFAULT: '#F04438',
+					dark: '#912018',
+				},
+				'found': {
+					light: '#EFF8FF',
+					DEFAULT: '#2E90FA',
+					dark: '#175CD3',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
