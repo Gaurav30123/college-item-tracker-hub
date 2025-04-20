@@ -1,9 +1,11 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { LostItem, FoundItem } from "@/types";
 
@@ -30,6 +32,7 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
       itemType,
       title: "",
       description: "",
+      category: undefined,
       location: "",
       date: new Date().toISOString().split("T")[0],
       contactInfo: "",
@@ -70,10 +73,17 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
   const handleSubmit = (data: ReportItemFormValues) => {    
     setIsSubmitting(true);
     
+    // Make sure all required fields are present for the submission
     const submissionData = {
       ...data,
       userId: "user-123",
-      image: imagePreview || undefined
+      image: imagePreview || undefined,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      location: data.location,
+      date: data.date,
+      contactInfo: data.contactInfo
     };
     
     // Show success message
@@ -84,7 +94,7 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
     
     // Call onSubmit prop if provided
     if (onSubmit) {
-      onSubmit(submissionData);
+      onSubmit(submissionData as Omit<LostItem | FoundItem, "id" | "status" | "createdAt">);
     }
     
     setIsSubmitting(false);
