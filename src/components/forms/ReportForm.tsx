@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Camera, Upload } from "lucide-react";
 import { z } from "zod";
@@ -117,9 +116,10 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
   const handleSubmit = (data: ReportItemFormValues) => {    
     setIsSubmitting(true);
     
-    // Add timestamp and other properties
+    // Add timestamp, userId, and other properties
     const submissionData = {
       ...data,
+      userId: "user-123", // Add a mock userId since it's required by the itemService
       image: imagePreview || undefined // Add image if exists
     };
     
