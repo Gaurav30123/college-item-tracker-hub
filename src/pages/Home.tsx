@@ -1,16 +1,18 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Upload, List, Bell, Eye, CheckCircle, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import ItemCard from "@/components/items/ItemCard";
 import { LOST_ITEMS, FOUND_ITEMS, CATEGORIES } from "@/utils/mockData";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   
   // Get recent lost and found items
   const recentLostItems = LOST_ITEMS.slice(0, 3);
@@ -20,6 +22,13 @@ export default function Home() {
   const totalLost = LOST_ITEMS.length;
   const totalFound = FOUND_ITEMS.length;
   const totalClaimed = [...LOST_ITEMS, ...FOUND_ITEMS].filter(item => item.status === "claimed").length;
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/lost-items?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -64,7 +73,7 @@ export default function Home() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <form onSubmit={(e) => { e.preventDefault(); window.location.href = `/lost-items?q=${searchQuery}`; }}>
+                      <form onSubmit={handleSearch}>
                         <div className="relative">
                           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                           <input
@@ -279,18 +288,7 @@ export default function Home() {
         </section>
       </main>
       
-      <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} Campus Lost & Found. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <Link to="#" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
-            <Link to="#" className="underline underline-offset-4 hover:text-foreground">Privacy</Link>
-            <Link to="#" className="underline underline-offset-4 hover:text-foreground">Contact</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

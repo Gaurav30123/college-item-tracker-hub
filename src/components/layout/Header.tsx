@@ -1,20 +1,21 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, Search, Bell, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CURRENT_USER } from "@/utils/mockData";
 
-export default function Header({ onSearch }: { onSearch?: (query: string) => void }) {
+export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   const user = CURRENT_USER;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSearch) {
-      onSearch(searchQuery);
+    if (searchQuery.trim()) {
+      navigate(`/lost-items?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -30,25 +31,30 @@ export default function Header({ onSearch }: { onSearch?: (query: string) => voi
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-              <nav className="flex flex-col gap-4 mt-8">
-                <Link to="/" className="text-lg font-semibold hover:underline">
-                  Home
+              <div className="flex flex-col">
+                <Link to="/" className="px-2 py-4 text-lg font-bold">
+                  CampusFind
                 </Link>
-                <Link to="/lost-items" className="text-lg font-semibold hover:underline">
-                  Lost Items
-                </Link>
-                <Link to="/found-items" className="text-lg font-semibold hover:underline">
-                  Found Items
-                </Link>
-                <Link to="/report" className="text-lg font-semibold hover:underline">
-                  Report Item
-                </Link>
-                {user.isAdmin && (
-                  <Link to="/admin" className="text-lg font-semibold hover:underline">
-                    Admin Dashboard
+                <nav className="flex flex-col gap-4 mt-4">
+                  <Link to="/" className="text-lg font-semibold hover:underline">
+                    Home
                   </Link>
-                )}
-              </nav>
+                  <Link to="/lost-items" className="text-lg font-semibold hover:underline">
+                    Lost Items
+                  </Link>
+                  <Link to="/found-items" className="text-lg font-semibold hover:underline">
+                    Found Items
+                  </Link>
+                  <Link to="/report" className="text-lg font-semibold hover:underline">
+                    Report Item
+                  </Link>
+                  {user.isAdmin && (
+                    <Link to="/admin" className="text-lg font-semibold hover:underline">
+                      Admin Dashboard
+                    </Link>
+                  )}
+                </nav>
+              </div>
             </SheetContent>
           </Sheet>
           <Link to="/" className="flex items-center gap-2">
@@ -91,14 +97,18 @@ export default function Header({ onSearch }: { onSearch?: (query: string) => voi
             </Button>
           </form>
 
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/notifications">
+              <Bell className="h-5 w-5" />
+              <span className="sr-only">Notifications</span>
+            </Link>
           </Button>
 
-          <Button variant="ghost" size="icon">
-            <User className="h-5 w-5" />
-            <span className="sr-only">Profile</span>
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/profile">
+              <User className="h-5 w-5" />
+              <span className="sr-only">Profile</span>
+            </Link>
           </Button>
         </div>
       </div>

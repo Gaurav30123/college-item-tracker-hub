@@ -1,344 +1,319 @@
 
-import { useState } from "react";
-import { Search, Filter, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Search, Calendar, Tag, MapPin, Filter, X } from "lucide-react";
+import { format } from "date-fns";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { 
-  Sheet, 
-  SheetClose, 
-  SheetContent, 
-  SheetFooter, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger 
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { CATEGORIES, LOCATIONS } from "@/utils/mockData";
-import { ItemCategory } from "@/types";
-
-interface FilterOptions {
-  category?: ItemCategory;
-  location?: string;
-  dateStart?: string;
-  dateEnd?: string;
-  status?: string;
-}
 
 interface SearchFilterProps {
-  onSearch: (query: string, filters: FilterOptions) => void;
+  onSearch: (query: string, filters: any) => void;
 }
 
 export default function SearchFilter({ onSearch }: SearchFilterProps) {
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<FilterOptions>({});
-  const [tempFilters, setTempFilters] = useState<FilterOptions>({});
-  const [isFilterActive, setIsFilterActive] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(query, filters);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Get initial values from URL
+  const initialQuery = searchParams.get("q") || "";
+  const initialCategory = searchParams.get("category") || "";
+  const initialLocation = searchParams.get("location") || "";
+  const initialStartDate = searchParams.get("startDate") ? new Date(searchParams.get("startDate")!) : undefined;
+  const initialEndDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined;
+  
+  // State for search form
+  const [query, setQuery] = useState(initialQuery);
+  const [category, setCategory] = useState(initialCategory);
+  const [location, setLocation] = useState(initialLocation);
+  const [startDate, setStartDate] = useState<Date | undefined>(initialStartDate);
+  const [endDate, setEndDate] = useState<Date | undefined>(initialEndDate);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Check if there are any active filters
+  const hasActiveFilters = !!(category || location || startDate || endDate);
+  
+  // Apply search
+  const applySearch = () => {
+    const newParams = new URLSearchParams();
+    if (query) newParams.set("q", query);
+    if (category) newParams.set("category", category);
+    if (location) newParams.set("location", location);
+    if (startDate) newParams.set("startDate", startDate.toISOString().split("T")[0]);
+    if (endDate) newParams.set("endDate", endDate.toISOString().split("T")[0]);
+    
+    setSearchParams(newParams);
+    
+    onSearch(query, {
+      category: category || undefined,
+      location: location || undefined,
+      startDate,
+      endDate,
+    });
   };
-
-  const handleFilterApply = () => {
-    setFilters(tempFilters);
-    setIsFilterActive(
-      Boolean(
-        tempFilters.category || 
-        tempFilters.location || 
-        tempFilters.dateStart || 
-        tempFilters.dateEnd || 
-        tempFilters.status
-      )
-    );
-    onSearch(query, tempFilters);
-  };
-
-  const handleFilterReset = () => {
-    setTempFilters({});
-    setFilters({});
-    setIsFilterActive(false);
+  
+  // Clear all filters
+  const clearFilters = () => {
+    setCategory("");
+    setLocation("");
+    setStartDate(undefined);
+    setEndDate(undefined);
+    
+    const newParams = new URLSearchParams();
+    if (query) newParams.set("q", query);
+    setSearchParams(newParams);
+    
     onSearch(query, {});
   };
-
+  
+  // Apply search on initial load
+  useEffect(() => {
+    applySearch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <form onSubmit={handleSearch} className="flex w-full gap-2">
-        <div className="relative flex-grow">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="space-y-4">
+      {/* Search bar */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            type="search"
-            placeholder="Search for items..."
-            className="pl-8"
+            placeholder="Search for lost or found items..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            className="pl-9"
+            onKeyDown={(e) => e.key === "Enter" && applySearch()}
           />
         </div>
         
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button 
-              type="button" 
-              variant={isFilterActive ? "default" : "outline"} 
-              className="gap-1"
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {isFilterActive && (
-                <span className="ml-1 rounded-full bg-primary text-primary-foreground w-5 h-5 text-xs flex items-center justify-center">
-                  {Object.values(filters).filter(Boolean).length}
-                </span>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Filter Items</SheetTitle>
-            </SheetHeader>
-            
-            <div className="py-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={tempFilters.category || ""}
-                  onValueChange={(value) => 
-                    setTempFilters({
-                      ...tempFilters,
-                      category: value as ItemCategory || undefined
-                    })
-                  }
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
-                    {CATEGORIES.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Select
-                  value={tempFilters.location || ""}
-                  onValueChange={(value) => 
-                    setTempFilters({
-                      ...tempFilters,
-                      location: value || undefined
-                    })
-                  }
-                >
-                  <SelectTrigger id="location">
-                    <SelectValue placeholder="All Locations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Locations</SelectItem>
-                    {LOCATIONS.map((location) => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="dateStart">Date Range (From)</Label>
-                <Input
-                  id="dateStart"
-                  type="date"
-                  value={tempFilters.dateStart || ""}
-                  onChange={(e) => 
-                    setTempFilters({
-                      ...tempFilters,
-                      dateStart: e.target.value || undefined
-                    })
-                  }
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="dateEnd">Date Range (To)</Label>
-                <Input
-                  id="dateEnd"
-                  type="date"
-                  value={tempFilters.dateEnd || ""}
-                  onChange={(e) => 
-                    setTempFilters({
-                      ...tempFilters,
-                      dateEnd: e.target.value || undefined
-                    })
-                  }
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={tempFilters.status || ""}
-                  onValueChange={(value) => 
-                    setTempFilters({
-                      ...tempFilters,
-                      status: value || undefined
-                    })
-                  }
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                    <SelectItem value="claimed">Claimed</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <SheetFooter className="flex flex-row gap-2 sm:space-x-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleFilterReset}
-                className="flex-1"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Reset
-              </Button>
-              <SheetClose asChild>
-                <Button
-                  type="button"
-                  onClick={handleFilterApply}
-                  className="flex-1"
-                >
-                  Apply Filters
-                </Button>
-              </SheetClose>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
-        
-        <Button type="submit">
+        <Button onClick={applySearch}>
           Search
         </Button>
-      </form>
+        
+        <Button
+          variant={showFilters ? "default" : "outline"}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          Filters
+          {hasActiveFilters && !showFilters && (
+            <span className="ml-1 flex h-2 w-2 rounded-full bg-primary" />
+          )}
+        </Button>
+      </div>
       
-      {isFilterActive && (
-        <div className="flex flex-wrap gap-2">
-          {filters.category && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Category: {filters.category}
+      {/* Filters */}
+      {showFilters && (
+        <div className="grid gap-4 p-4 border rounded-md bg-card">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium">Filter Options</h3>
+            {hasActiveFilters && (
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => {
-                  const newFilters = { ...filters };
-                  delete newFilters.category;
-                  setFilters(newFilters);
-                  setTempFilters(newFilters);
-                  setIsFilterActive(Object.values(newFilters).some(Boolean));
-                  onSearch(query, newFilters);
-                }}
+                size="sm"
+                onClick={clearFilters}
+                className="h-7 text-sm"
               >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove filter</span>
+                <X className="h-3 w-3 mr-1" />
+                Clear filters
               </Button>
-            </Badge>
-          )}
+            )}
+          </div>
           
-          {filters.location && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Location: {filters.location}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => {
-                  const newFilters = { ...filters };
-                  delete newFilters.location;
-                  setFilters(newFilters);
-                  setTempFilters(newFilters);
-                  setIsFilterActive(Object.values(newFilters).some(Boolean));
-                  onSearch(query, newFilters);
-                }}
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove filter</span>
-              </Button>
-            </Badge>
-          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Category filter */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <label className="text-sm font-medium">Category</label>
+              </div>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All categories</SelectItem>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Location filter */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <label className="text-sm font-medium">Location</label>
+              </div>
+              <Select value={location} onValueChange={setLocation}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All locations</SelectItem>
+                  {LOCATIONS.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {loc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Date range filter */}
+            <div className="space-y-2 sm:col-span-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <label className="text-sm font-medium">Date Range</label>
+              </div>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      {startDate ? format(startDate, "MMM dd, yyyy") : "Start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 pointer-events-auto">
+                    <CalendarComponent
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      disabled={(date) => endDate ? date > endDate : false}
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      {endDate ? format(endDate, "MMM dd, yyyy") : "End date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 pointer-events-auto">
+                    <CalendarComponent
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      disabled={(date) => startDate ? date < startDate : false}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
           
-          {(filters.dateStart || filters.dateEnd) && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Date: {filters.dateStart && new Date(filters.dateStart).toLocaleDateString()}
-              {filters.dateStart && filters.dateEnd && " - "}
-              {filters.dateEnd && new Date(filters.dateEnd).toLocaleDateString()}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => {
-                  const newFilters = { ...filters };
-                  delete newFilters.dateStart;
-                  delete newFilters.dateEnd;
-                  setFilters(newFilters);
-                  setTempFilters(newFilters);
-                  setIsFilterActive(Object.values(newFilters).some(Boolean));
-                  onSearch(query, newFilters);
-                }}
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {filters.status && (
-            <Badge variant="outline" className="flex items-center gap-1">
-              Status: {filters.status}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => {
-                  const newFilters = { ...filters };
-                  delete newFilters.status;
-                  setFilters(newFilters);
-                  setTempFilters(newFilters);
-                  setIsFilterActive(Object.values(newFilters).some(Boolean));
-                  onSearch(query, newFilters);
-                }}
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {isFilterActive && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={handleFilterReset}
-            >
-              Clear All Filters
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setShowFilters(false)}>
+              Close
             </Button>
+            <Button onClick={applySearch}>
+              Apply Filters
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Active filters display */}
+      {hasActiveFilters && !showFilters && (
+        <div className="flex flex-wrap gap-2 p-2">
+          {category && (
+            <div className="flex items-center gap-1 text-sm bg-accent px-2 py-1 rounded-full">
+              <Tag className="h-3 w-3" />
+              <span>{CATEGORIES.find(c => c.value === category)?.label || category}</span>
+              <button 
+                onClick={() => {
+                  setCategory("");
+                  applySearch();
+                }}
+                className="ml-1 hover:text-primary"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          
+          {location && (
+            <div className="flex items-center gap-1 text-sm bg-accent px-2 py-1 rounded-full">
+              <MapPin className="h-3 w-3" />
+              <span>{location}</span>
+              <button 
+                onClick={() => {
+                  setLocation("");
+                  applySearch();
+                }}
+                className="ml-1 hover:text-primary"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          
+          {startDate && endDate && (
+            <div className="flex items-center gap-1 text-sm bg-accent px-2 py-1 rounded-full">
+              <Calendar className="h-3 w-3" />
+              <span>{format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}</span>
+              <button 
+                onClick={() => {
+                  setStartDate(undefined);
+                  setEndDate(undefined);
+                  applySearch();
+                }}
+                className="ml-1 hover:text-primary"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          
+          {(startDate && !endDate) && (
+            <div className="flex items-center gap-1 text-sm bg-accent px-2 py-1 rounded-full">
+              <Calendar className="h-3 w-3" />
+              <span>From {format(startDate, "MMM d, yyyy")}</span>
+              <button 
+                onClick={() => {
+                  setStartDate(undefined);
+                  applySearch();
+                }}
+                className="ml-1 hover:text-primary"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          
+          {(endDate && !startDate) && (
+            <div className="flex items-center gap-1 text-sm bg-accent px-2 py-1 rounded-full">
+              <Calendar className="h-3 w-3" />
+              <span>Until {format(endDate, "MMM d, yyyy")}</span>
+              <button 
+                onClick={() => {
+                  setEndDate(undefined);
+                  applySearch();
+                }}
+                className="ml-1 hover:text-primary"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
         </div>
       )}

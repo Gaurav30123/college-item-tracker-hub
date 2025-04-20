@@ -6,27 +6,46 @@ import SearchFilter from "@/components/items/SearchFilter";
 import ItemCard from "@/components/items/ItemCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { LOST_ITEMS, searchItems } from "@/utils/mockData";
-import { LostItem } from "@/types";
+import { ItemCategory, LostItem } from "@/types";
 import { Plus } from "lucide-react";
+import { getLostItems, searchItems } from "@/services/itemService";
 
 export default function LostItems() {
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
-  const initialCategory = searchParams.get("category") || undefined;
+  const initialCategory = searchParams.get("category") as ItemCategory | undefined;
+  const initialLocation = searchParams.get("location") || undefined;
+  const initialStartDate = searchParams.get("startDate") ? new Date(searchParams.get("startDate") as string) : undefined;
+  const initialEndDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate") as string) : undefined;
   
   const [filteredItems, setFilteredItems] = useState<LostItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allItems, setAllItems] = useState<LostItem[]>([]);
+
+  useEffect(() => {
+    // Get all items
+    setAllItems(getLostItems());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Initial search based on URL parameters
   useEffect(() => {
-    const filters = {
-      category: initialCategory as any,
-    };
-    
-    setFilteredItems(searchItems(LOST_ITEMS, initialQuery, filters) as LostItem[]);
-    setLoading(false);
-  }, [initialQuery, initialCategory]);
+    if (allItems.length > 0) {
+      const filters = {
+        category: initialCategory,
+        location: initialLocation,
+        startDate: initialStartDate,
+        endDate: initialEndDate
+      };
+      
+      setLoading(true);
+      // Simulate API delay
+      setTimeout(() => {
+        setFilteredItems(searchItems(allItems, initialQuery, filters) as LostItem[]);
+        setLoading(false);
+      }, 300);
+    }
+  }, [allItems, initialQuery, initialCategory, initialLocation, initialStartDate, initialEndDate]);
 
   // Handle search and filter
   const handleSearch = (query: string, filters: any) => {
@@ -34,7 +53,7 @@ export default function LostItems() {
     
     // Simulate API delay
     setTimeout(() => {
-      setFilteredItems(searchItems(LOST_ITEMS, query, filters) as LostItem[]);
+      setFilteredItems(searchItems(allItems, query, filters) as LostItem[]);
       setLoading(false);
     }, 300);
   };

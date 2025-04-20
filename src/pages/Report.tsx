@@ -1,11 +1,20 @@
 
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import ReportForm from "@/components/forms/ReportForm";
+import Footer from "@/components/layout/Footer";
+import { LostItem, FoundItem } from "@/types";
+import { addItem } from "@/services/itemService";
 
 export default function Report() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const itemType = searchParams.get("type") as "lost" | "found" || "lost";
+
+  const handleFormSubmit = (data: Omit<LostItem | FoundItem, "id" | "status" | "createdAt">) => {
+    const newItem = addItem(data, itemType);
+    navigate(`/${itemType}-items/${newItem.id}`);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -19,16 +28,10 @@ export default function Report() {
           </p>
         </div>
         
-        <ReportForm defaultType={itemType} />
+        <ReportForm defaultType={itemType} onSubmit={handleFormSubmit} />
       </main>
       
-      <footer className="border-t py-6">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} Campus Lost & Found. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

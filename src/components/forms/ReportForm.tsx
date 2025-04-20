@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Camera, Upload } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -27,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { CATEGORIES, LOCATIONS } from "@/utils/mockData";
-import { ItemCategory } from "@/types";
+import { ItemCategory, LostItem, FoundItem } from "@/types";
 
 // Schema for both lost and found items
 const baseItemSchema = z.object({
@@ -63,12 +62,13 @@ type ReportItemFormValues = z.infer<typeof reportItemSchema>;
 
 interface ReportFormProps {
   defaultType?: "lost" | "found";
+  onSubmit?: (data: Omit<LostItem | FoundItem, "id" | "status" | "createdAt">) => void;
 }
 
-export default function ReportForm({ defaultType = "lost" }: ReportFormProps) {
-  const navigate = useNavigate();
+export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFormProps) {
   const [itemType, setItemType] = useState<"lost" | "found">(defaultType);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Create form with validation
   const form = useForm<ReportItemFormValues>({
@@ -114,14 +114,12 @@ export default function ReportForm({ defaultType = "lost" }: ReportFormProps) {
   };
 
   // Form submission handler
-  const onSubmit = (data: ReportItemFormValues) => {    
+  const handleSubmit = (data: ReportItemFormValues) => {    
+    setIsSubmitting(true);
+    
     // Add timestamp and other properties
     const submissionData = {
       ...data,
-      id: `${itemType}${Math.floor(Math.random() * 10000)}`,
-      status: "pending",
-      userId: "user1", // Mock user ID (would come from auth in real app)
-      createdAt: new Date().toISOString(),
       image: imagePreview || undefined // Add image if exists
     };
     
@@ -133,8 +131,13 @@ export default function ReportForm({ defaultType = "lost" }: ReportFormProps) {
       description: `Your ${itemType} item has been reported successfully.`,
     });
     
-    // Navigate to appropriate list page
-    navigate(`/${itemType}-items`);
+    // Call onSubmit prop if provided
+    if (onSubmit) {
+      onSubmit(submissionData);
+    }
+    
+    // Reset form
+    setIsSubmitting(false);
   };
 
   return (
@@ -159,7 +162,7 @@ export default function ReportForm({ defaultType = "lost" }: ReportFormProps) {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <FormField
             control={form.control}
             name="title"
@@ -413,8 +416,8 @@ export default function ReportForm({ defaultType = "lost" }: ReportFormProps) {
             )}
           </div>
 
-          <Button type="submit" className="w-full">
-            Submit Report
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit Report"}
           </Button>
         </form>
       </Form>
