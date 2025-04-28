@@ -1,95 +1,161 @@
 
 import { LostItem, FoundItem, ItemCategory } from "@/types";
-import { LOST_ITEMS, FOUND_ITEMS } from "@/utils/mockData";
+
+// API base URL
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Get all lost items
-export const getLostItems = () => {
-  return [...LOST_ITEMS];
+export const getLostItems = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/items?itemType=lost`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch lost items');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching lost items:', error);
+    // Fallback to mock data for development
+    return [];
+  }
 };
 
 // Get all found items
-export const getFoundItems = () => {
-  return [...FOUND_ITEMS];
+export const getFoundItems = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/items?itemType=found`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch found items');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching found items:', error);
+    // Fallback to mock data for development
+    return [];
+  }
 };
 
 // Get item by ID and type
-export const getItemById = (id: string, type: "lost" | "found"): LostItem | FoundItem | undefined => {
-  const items = type === "lost" ? LOST_ITEMS : FOUND_ITEMS;
-  return items.find(item => item.id === id);
+export const getItemById = async (id: string, type: "lost" | "found"): Promise<LostItem | FoundItem | undefined> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/items/${id}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch item');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching ${type} item with ID ${id}:`, error);
+    return undefined;
+  }
 };
 
 // Search items with filters
-export const searchItems = (
-  items: LostItem[] | FoundItem[], 
-  query: string, 
+export const searchItems = async (
+  type: "lost" | "found",
+  query: string = "", 
   filters: { 
     category?: ItemCategory, 
     startDate?: Date, 
     endDate?: Date, 
     location?: string 
-  }
+  } = {}
 ) => {
-  return items.filter(item => {
-    // Filter by search query
-    const matchesQuery = !query || 
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.description.toLowerCase().includes(query.toLowerCase());
+  try {
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('itemType', type);
     
-    // Filter by category
-    const matchesCategory = !filters.category || item.category === filters.category;
+    if (query) {
+      params.append('query', query);
+    }
     
-    // Filter by date range
-    const itemDate = new Date(item.date);
-    const matchesDateRange = 
-      (!filters.startDate || itemDate >= filters.startDate) &&
-      (!filters.endDate || itemDate <= filters.endDate);
+    if (filters.category) {
+      params.append('category', filters.category);
+    }
     
-    // Filter by location
-    const matchesLocation = !filters.location || item.location === filters.location;
+    if (filters.startDate) {
+      params.append('startDate', filters.startDate.toISOString().split('T')[0]);
+    }
     
-    return matchesQuery && matchesCategory && matchesDateRange && matchesLocation;
-  });
+    if (filters.endDate) {
+      params.append('endDate', filters.endDate.toISOString().split('T')[0]);
+    }
+    
+    if (filters.location) {
+      params.append('location', filters.location);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/items?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error('Failed to search items');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching items:', error);
+    return [];
+  }
 };
 
 // Add a new lost or found item
-export const addItem = (
+export const addItem = async (
   item: Omit<LostItem | FoundItem, "id" | "status" | "createdAt">, 
   type: "lost" | "found"
-): LostItem | FoundItem => {
-  const newItem = {
-    ...item,
-    id: `${type}-${Date.now()}`,
-    status: "pending",
-    createdAt: new Date().toISOString(),
-  } as LostItem | FoundItem;
-  
-  if (type === "lost") {
-    LOST_ITEMS.unshift(newItem as LostItem);
-  } else {
-    FOUND_ITEMS.unshift(newItem as FoundItem);
+): Promise<LostItem | FoundItem> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/items`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...item,
+        itemType: type
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create item');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error adding item:', error);
+    throw error;
   }
-  
-  return newItem;
+};
+
+// Upload an image
+export const uploadImage = async (file: File): Promise<string> => {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await fetch(`${API_BASE_URL}/upload/image`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to upload image');
+    }
+    
+    const data = await response.json();
+    return data.image;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw error;
+  }
 };
 
 // Find potential matches for an item
-export const findPotentialMatches = (item: LostItem | FoundItem, type: "lost" | "found", limit = 5) => {
-  const oppositeType = type === "lost" ? "found" : "lost";
-  const oppositeItems = oppositeType === "lost" ? LOST_ITEMS : FOUND_ITEMS;
-  
-  // Simple matching algorithm based on category and keywords in title/description
-  return oppositeItems
-    .filter(otherItem => {
-      // Match by category
-      if (otherItem.category !== item.category) return false;
-      
-      // Check for keyword matches in title or description
-      const itemKeywords = [...item.title.toLowerCase().split(" "), ...item.description.toLowerCase().split(" ")]
-        .filter(word => word.length > 3);
-      
-      const otherItemText = `${otherItem.title.toLowerCase()} ${otherItem.description.toLowerCase()}`;
-      
-      return itemKeywords.some(keyword => otherItemText.includes(keyword));
-    })
-    .slice(0, limit);
+export const findPotentialMatches = async (id: string, limit = 5) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/items/${id}/matches`);
+    if (!response.ok) {
+      throw new Error('Failed to find matches');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error finding matches:', error);
+    return [];
+  }
 };

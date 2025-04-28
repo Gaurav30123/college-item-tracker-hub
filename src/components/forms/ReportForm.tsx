@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +13,7 @@ import { ImageUpload } from "./report/ImageUpload";
 import { ItemTypeSelector } from "./report/ItemTypeSelector";
 import { BasicDetails } from "./report/BasicDetails";
 import { TypeSpecificFields } from "./report/TypeSpecificFields";
+import { uploadImage } from "@/services/itemService";
 
 interface ReportFormProps {
   defaultType?: "lost" | "found";
@@ -24,6 +24,7 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
   const [itemType, setItemType] = useState<"lost" | "found">(defaultType);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Create form with validation
   const form = useForm<ReportItemFormValues>({
@@ -61,6 +62,7 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -70,34 +72,49 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
   };
 
   // Form submission handler
-  const handleSubmit = (data: ReportItemFormValues) => {    
+  const handleSubmit = async (data: ReportItemFormValues) => {    
     setIsSubmitting(true);
     
-    // Make sure all required fields are present for the submission
-    const submissionData = {
-      ...data,
-      userId: "user-123",
-      image: imagePreview || undefined,
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      location: data.location,
-      date: data.date,
-      contactInfo: data.contactInfo
-    };
-    
-    // Show success message
-    toast({
-      title: "Item Reported",
-      description: `Your ${itemType} item has been reported successfully.`,
-    });
-    
-    // Call onSubmit prop if provided
-    if (onSubmit) {
-      onSubmit(submissionData as Omit<LostItem | FoundItem, "id" | "status" | "createdAt">);
+    try {
+      // Upload image if available
+      let imageUrl;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+      
+      // Make sure all required fields are present for the submission
+      const submissionData = {
+        ...data,
+        userId: "user-123",
+        image: imageUrl || imagePreview || undefined,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        location: data.location,
+        date: data.date,
+        contactInfo: data.contactInfo
+      };
+      
+      // Show success message
+      toast({
+        title: "Item Reported",
+        description: `Your ${itemType} item has been reported successfully.`,
+      });
+      
+      // Call onSubmit prop if provided
+      if (onSubmit) {
+        onSubmit(submissionData as Omit<LostItem | FoundItem, "id" | "status" | "createdAt">);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit your report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setIsSubmitting(false);
   };
 
   return (
