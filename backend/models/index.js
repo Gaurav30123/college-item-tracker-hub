@@ -1,11 +1,14 @@
 
 const sequelize = require('../config/database');
 const Item = require('./Item');
+const User = require('./User');
 
-// Define associations here if needed
-// For example: User.hasMany(Item);
+// Define associations
+Item.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Item, { foreignKey: 'userId' });
 
 module.exports = {
   sequelize,
-  Item
+  Item,
+  User
 };
