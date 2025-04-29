@@ -24,8 +24,17 @@ export default function LostItems() {
 
   useEffect(() => {
     // Get all items
-    setAllItems(getLostItems());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetchItems = async () => {
+      try {
+        const items = await getLostItems();
+        setAllItems(items);
+      } catch (error) {
+        console.error("Error fetching lost items:", error);
+        setAllItems([]);
+      }
+    };
+    
+    fetchItems();
   }, []);
 
   // Initial search based on URL parameters
@@ -40,8 +49,14 @@ export default function LostItems() {
       
       setLoading(true);
       // Simulate API delay
-      setTimeout(() => {
-        setFilteredItems(searchItems(allItems, initialQuery, filters) as LostItem[]);
+      setTimeout(async () => {
+        try {
+          const items = await searchItems("lost", initialQuery, filters);
+          setFilteredItems(items as LostItem[]);
+        } catch (error) {
+          console.error("Error searching items:", error);
+          setFilteredItems([]);
+        }
         setLoading(false);
       }, 300);
     }
@@ -52,8 +67,14 @@ export default function LostItems() {
     setLoading(true);
     
     // Simulate API delay
-    setTimeout(() => {
-      setFilteredItems(searchItems(allItems, query, filters) as LostItem[]);
+    setTimeout(async () => {
+      try {
+        const items = await searchItems("lost", query, filters);
+        setFilteredItems(items as LostItem[]);
+      } catch (error) {
+        console.error("Error searching items:", error);
+        setFilteredItems([]);
+      }
       setLoading(false);
     }, 300);
   };

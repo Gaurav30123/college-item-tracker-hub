@@ -11,9 +11,14 @@ export default function Report() {
   const navigate = useNavigate();
   const itemType = searchParams.get("type") as "lost" | "found" || "lost";
 
-  const handleFormSubmit = (data: Omit<LostItem | FoundItem, "id" | "status" | "createdAt">) => {
-    const newItem = addItem(data, itemType);
-    navigate(`/${itemType}-items/${newItem.id}`);
+  const handleFormSubmit = async (data: Omit<LostItem | FoundItem, "id" | "status" | "createdAt">) => {
+    try {
+      const newItem = await addItem(data, itemType);
+      navigate(`/${itemType}-items/${newItem.id}`);
+    } catch (error) {
+      console.error("Error adding item:", error);
+      // Here you might want to show an error message to the user
+    }
   };
 
   return (
