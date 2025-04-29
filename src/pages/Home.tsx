@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Upload, List, Bell, Eye, CheckCircle, Calendar, MapPin } from "lucide-react";
@@ -49,7 +48,6 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  {/* Swapped the order of these two buttons */}
                   <Link to="/lost-items">
                     <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-200">
                       <Search className="mr-2 h-5 w-5" />
@@ -57,7 +55,7 @@ export default function Home() {
                     </Button>
                   </Link>
                   <Link to="/report">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-600">
+                    <Button size="lg" className="border-white bg-transparent text-white">
                       <Upload className="mr-2 h-5 w-5" />
                       Report an Item
                     </Button>
