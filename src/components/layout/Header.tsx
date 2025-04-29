@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, Search, Bell, User } from "lucide-react";
+import { Menu, Search, Bell, User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -9,8 +9,15 @@ import { CURRENT_USER } from "@/utils/mockData";
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
   const user = CURRENT_USER;
+
+  useEffect(() => {
+    // Check if token exists in localStorage
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +59,20 @@ export default function Header() {
                     <Link to="/admin" className="text-lg font-semibold hover:underline">
                       Admin Dashboard
                     </Link>
+                  )}
+                  {isLoggedIn ? (
+                    <Link to="/profile" className="text-lg font-semibold hover:underline">
+                      My Profile
+                    </Link>
+                  ) : (
+                    <>
+                      <Link to="/login" className="text-lg font-semibold hover:underline">
+                        Login
+                      </Link>
+                      <Link to="/signup" className="text-lg font-semibold hover:underline">
+                        Sign Up
+                      </Link>
+                    </>
                   )}
                 </nav>
               </div>
@@ -104,12 +125,21 @@ export default function Header() {
             </Link>
           </Button>
 
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/profile">
-              <User className="h-5 w-5" />
-              <span className="sr-only">Profile</span>
-            </Link>
-          </Button>
+          {isLoggedIn ? (
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/profile">
+                <User className="h-5 w-5" />
+                <span className="sr-only">Profile</span>
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/login">
+                <LogIn className="h-5 w-5" />
+                <span className="sr-only">Login</span>
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
