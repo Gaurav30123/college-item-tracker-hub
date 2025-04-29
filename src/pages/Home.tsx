@@ -49,16 +49,17 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link to="/report">
-                    <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-200">
-                      <Upload className="mr-2 h-5 w-5" />
-                      Report an Item
-                    </Button>
-                  </Link>
+                  {/* Swapped the order of these two buttons */}
                   <Link to="/lost-items">
-                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-600">
+                    <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-200">
                       <Search className="mr-2 h-5 w-5" />
                       Find Lost Items
+                    </Button>
+                  </Link>
+                  <Link to="/report">
+                    <Button size="lg" variant="outline" className="border-white text-white hover:bg-blue-600">
+                      <Upload className="mr-2 h-5 w-5" />
+                      Report an Item
                     </Button>
                   </Link>
                 </div>
