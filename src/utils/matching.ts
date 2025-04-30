@@ -1,5 +1,22 @@
 
 import { LostItem, FoundItem } from "@/types";
+import { calculateMLMatchScore } from "./mlMatching";
+
+let useMLMatching = false;
+
+/**
+ * Enable or disable ML-based matching
+ */
+export function setUseMLMatching(enabled: boolean) {
+  useMLMatching = enabled;
+}
+
+/**
+ * Check if ML-based matching is enabled
+ */
+export function isMLMatchingEnabled(): boolean {
+  return useMLMatching;
+}
 
 /**
  * Score a potential match between a lost and found item
@@ -59,9 +76,13 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): n
  * Calculate confidence level based on match score
  */
 export function getMatchConfidence(score: number): "high" | "medium" | "low" {
-  if (score >= 65) {
+  // Adjust thresholds for ML-based matching which can score higher
+  const highThreshold = useMLMatching ? 75 : 65;
+  const mediumThreshold = useMLMatching ? 50 : 40;
+  
+  if (score >= highThreshold) {
     return "high";
-  } else if (score >= 40) {
+  } else if (score >= mediumThreshold) {
     return "medium";
   } else {
     return "low";
@@ -70,12 +91,13 @@ export function getMatchConfidence(score: number): "high" | "medium" | "low" {
 
 /**
  * Get potential matches sorted by match score
+ * Uses ML-based matching if enabled
  */
-export function getPotentialMatches(
+export async function getPotentialMatches(
   item: LostItem | FoundItem,
   items: (LostItem | FoundItem)[],
   minScore = 30
-): { item: LostItem | FoundItem; score: number; confidence: "high" | "medium" | "low" }[] {
+): Promise<{ item: LostItem | FoundItem; score: number; confidence: "high" | "medium" | "low" }[]> {
   // Filter items of the opposite type
   const oppositeItems = items.filter(i => {
     if (item.id.startsWith("lost")) {
@@ -85,13 +107,21 @@ export function getPotentialMatches(
     }
   });
   
-  const matches = oppositeItems.map(oppositeItem => {
+  const matchPromises = oppositeItems.map(async (oppositeItem) => {
     let score = 0;
     
-    if (item.id.startsWith("lost") && oppositeItem.id.startsWith("found")) {
-      score = calculateMatchScore(item as LostItem, oppositeItem as FoundItem);
-    } else if (item.id.startsWith("found") && oppositeItem.id.startsWith("lost")) {
-      score = calculateMatchScore(oppositeItem as LostItem, item as FoundItem);
+    if (useMLMatching) {
+      if (item.id.startsWith("lost") && oppositeItem.id.startsWith("found")) {
+        score = await calculateMLMatchScore(item as LostItem, oppositeItem as FoundItem);
+      } else if (item.id.startsWith("found") && oppositeItem.id.startsWith("lost")) {
+        score = await calculateMLMatchScore(oppositeItem as LostItem, item as FoundItem);
+      }
+    } else {
+      if (item.id.startsWith("lost") && oppositeItem.id.startsWith("found")) {
+        score = calculateMatchScore(item as LostItem, oppositeItem as FoundItem);
+      } else if (item.id.startsWith("found") && oppositeItem.id.startsWith("lost")) {
+        score = calculateMatchScore(oppositeItem as LostItem, item as FoundItem);
+      }
     }
     
     return {
@@ -100,6 +130,8 @@ export function getPotentialMatches(
       confidence: getMatchConfidence(score)
     };
   });
+  
+  const matches = await Promise.all(matchPromises);
   
   // Filter by minimum score and sort by score (highest first)
   return matches

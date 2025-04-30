@@ -114,10 +114,12 @@ exports.deleteItem = async (req, res) => {
   }
 };
 
-// Find potential matches
+// Find potential matches using enhanced matching algorithm
 exports.findMatches = async (req, res) => {
   try {
     const { id } = req.params;
+    const useML = req.query.useML === 'true'; // Query parameter to toggle ML matching
+    
     const item = await Item.findByPk(id);
     
     if (!item) {
@@ -127,17 +129,30 @@ exports.findMatches = async (req, res) => {
     // Find opposite type items (lost vs found)
     const oppositeType = item.itemType === 'lost' ? 'found' : 'lost';
     
-    const matches = await Item.findAll({
-      where: {
-        itemType: oppositeType,
-        category: item.category,
-        // Add more advanced matching logic as needed
-      },
-      limit: 5,
+    // Basic matching criteria (similar to frontend)
+    let whereConditions = {
+      itemType: oppositeType
+    };
+    
+    // Add category filter for basic matching
+    if (item.category) {
+      whereConditions.category = item.category;
+    }
+    
+    // Find potential matches
+    const potentialMatches = await Item.findAll({
+      where: whereConditions,
+      limit: useML ? 20 : 5, // Get more items for ML matching to filter later
       order: [['createdAt', 'DESC']]
     });
     
-    return res.status(200).json(matches);
+    // For ML-based matching, we'll return all potential matches
+    // The actual scoring will happen in the frontend with the ML models
+    
+    return res.status(200).json({
+      matches: potentialMatches,
+      useML: useML
+    });
   } catch (error) {
     console.error('Error finding matches:', error);
     return res.status(500).json({ message: 'Failed to find matches', error: error.message });
