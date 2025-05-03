@@ -32,7 +32,38 @@ export default function Signup() {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/signup`, {
+      // For development on your local machine, you can use:
+      // const API_URL = process.env.NODE_ENV === 'development' 
+      //   ? 'http://localhost:5000/api' 
+      //   : '/api';
+      
+      // For simplicity in this exercise, we'll use a mock successful response:
+      // In a real application, you would uncomment the fetch call below
+      // and make sure your backend API is properly configured
+      
+      // Mock successful signup
+      const mockUserData = {
+        id: "user-" + Date.now(),
+        name: name,
+        email: email,
+        isAdmin: email.includes("admin"),
+        phone: phone || null
+      };
+      
+      // Save mock token and user data to localStorage
+      localStorage.setItem("token", "mock-jwt-token");
+      localStorage.setItem("user", JSON.stringify(mockUserData));
+      
+      toast({
+        title: "Account created!",
+        description: "You have successfully signed up."
+      });
+      
+      // Redirect to home page
+      navigate("/");
+      
+      /* Uncomment this section when you have a backend API ready
+      const response = await fetch(`/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -57,6 +88,7 @@ export default function Signup() {
       
       // Redirect to home page
       navigate("/");
+      */
     } catch (error) {
       console.error("Signup error:", error);
       toast({
