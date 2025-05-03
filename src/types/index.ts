@@ -39,10 +39,11 @@ export interface FoundItem extends Item {
   storedLocation?: string;
 }
 
-// Mock user interface
+// User interface
 export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   isAdmin: boolean;
 }

@@ -5,18 +5,28 @@ import { Menu, Search, Bell, User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { CURRENT_USER } from "@/utils/mockData";
+import { User as UserType } from "@/types";
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);
   const navigate = useNavigate();
-  const user = CURRENT_USER;
 
   useEffect(() => {
     // Check if token exists in localStorage
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
+    
+    // Get user data from localStorage
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -55,7 +65,7 @@ export default function Header() {
                   <Link to="/report" className="text-lg font-semibold hover:underline">
                     Report Item
                   </Link>
-                  {user.isAdmin && (
+                  {user?.isAdmin && (
                     <Link to="/admin" className="text-lg font-semibold hover:underline">
                       Admin Dashboard
                     </Link>
@@ -96,7 +106,7 @@ export default function Header() {
           <Link to="/report" className="text-sm font-medium transition-colors hover:text-primary">
             Report Item
           </Link>
-          {user.isAdmin && (
+          {user?.isAdmin && (
             <Link to="/admin" className="text-sm font-medium transition-colors hover:text-primary">
               Admin Dashboard
             </Link>

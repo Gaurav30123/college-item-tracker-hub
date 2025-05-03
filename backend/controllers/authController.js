@@ -10,7 +10,7 @@ const generateToken = (id) => {
 // Register a new user
 const signup = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, isAdmin } = req.body;
     
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
@@ -23,7 +23,8 @@ const signup = async (req, res) => {
       name,
       email,
       password, // Password will be hashed by model hook
-      phone
+      phone,
+      isAdmin: isAdmin || false // Default to regular user if not specified
     });
     
     // Generate JWT token
@@ -35,7 +36,8 @@ const signup = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {
@@ -70,7 +72,8 @@ const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {
@@ -90,6 +93,7 @@ const getProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      isAdmin: user.isAdmin,
       createdAt: user.createdAt
     });
   } catch (error) {

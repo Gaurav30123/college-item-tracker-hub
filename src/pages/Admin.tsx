@@ -25,8 +25,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LOST_ITEMS, FOUND_ITEMS, CURRENT_USER } from "@/utils/mockData";
-import { LostItem, FoundItem } from "@/types";
+import { LOST_ITEMS, FOUND_ITEMS } from "@/utils/mockData";
+import { LostItem, FoundItem, User } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { Search, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
@@ -39,12 +39,23 @@ export default function Admin() {
 
   // Check if current user is admin
   useEffect(() => {
-    // In a real app, this would check auth state
-    if (CURRENT_USER.isAdmin) {
-      setIsAdmin(true);
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        const user = JSON.parse(userData) as User;
+        if (user.isAdmin) {
+          setIsAdmin(true);
+        } else {
+          // Redirect non-admin users
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        navigate("/");
+      }
     } else {
-      // Redirect non-admin users
-      navigate("/");
+      // No user data, redirect to login
+      navigate("/login");
     }
   }, [navigate]);
 

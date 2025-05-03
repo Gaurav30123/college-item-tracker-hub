@@ -1,15 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 type UserProfile = {
   id: string;
   name: string;
   email: string;
   phone?: string;
+  isAdmin: boolean;
   createdAt: string;
 };
 
@@ -105,9 +107,24 @@ export default function Profile() {
                 </div>
               )}
               <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Account Type</p>
+                {profile.isAdmin ? (
+                  <div className="flex items-center">
+                    <Badge className="bg-purple-600 hover:bg-purple-700">Admin</Badge>
+                  </div>
+                ) : (
+                  <p>Regular User</p>
+                )}
+              </div>
+              <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Member Since</p>
                 <p>{new Date(profile.createdAt).toLocaleDateString()}</p>
               </div>
+              {profile.isAdmin && (
+                <Button variant="outline" asChild className="w-full mb-4">
+                  <Link to="/admin">Go to Admin Dashboard</Link>
+                </Button>
+              )}
               <Button variant="destructive" onClick={handleLogout} className="w-full">
                 Log Out
               </Button>
