@@ -21,4 +21,10 @@ router.delete('/:id', itemController.deleteItem);
 // Find potential matches
 router.get('/:id/matches', itemController.findMatches);
 
+// Verify an item (admin only)
+router.put('/:id/verify', itemController.verifyItem);
+
+// Claim an item
+router.put('/:id/claim', itemController.claimItem);
+
 module.exports = router;

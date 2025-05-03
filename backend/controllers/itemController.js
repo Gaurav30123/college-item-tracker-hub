@@ -1,6 +1,7 @@
 
 const { Item } = require('../models');
 const { Op } = require('sequelize');
+const notificationController = require('./notificationController');
 
 // Create a new item
 exports.createItem = async (req, res) => {
@@ -80,6 +81,13 @@ exports.getItemById = async (req, res) => {
 // Update an item
 exports.updateItem = async (req, res) => {
   try {
+    const item = await Item.findByPk(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+    
+    const previousStatus = item.status;
     const [updated] = await Item.update(req.body, {
       where: { id: req.params.id }
     });
@@ -89,6 +97,12 @@ exports.updateItem = async (req, res) => {
     }
     
     const updatedItem = await Item.findByPk(req.params.id);
+    
+    // Send notifications based on status changes
+    if (updatedItem && previousStatus !== updatedItem.status) {
+      await handleStatusChangeNotification(updatedItem, previousStatus);
+    }
+    
     return res.status(200).json(updatedItem);
   } catch (error) {
     console.error('Error updating item:', error);
@@ -111,6 +125,37 @@ exports.deleteItem = async (req, res) => {
   } catch (error) {
     console.error('Error deleting item:', error);
     return res.status(500).json({ message: 'Failed to delete item', error: error.message });
+  }
+};
+
+// Verify an item
+exports.verifyItem = async (req, res) => {
+  try {
+    const item = await Item.findByPk(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+    
+    await Item.update({ status: 'verified' }, {
+      where: { id: req.params.id }
+    });
+    
+    const updatedItem = await Item.findByPk(req.params.id);
+    
+    // Send notification to user
+    await notificationController.notifyUser(
+      item.userId,
+      'Item Verified',
+      `Your ${item.itemType === 'lost' ? 'lost' : 'found'} item "${item.title}" has been verified by an administrator.`,
+      'item_verified',
+      item.id
+    );
+    
+    return res.status(200).json(updatedItem);
+  } catch (error) {
+    console.error('Error verifying item:', error);
+    return res.status(500).json({ message: 'Failed to verify item', error: error.message });
   }
 };
 
@@ -146,8 +191,17 @@ exports.findMatches = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
     
-    // For ML-based matching, we'll return all potential matches
-    // The actual scoring will happen in the frontend with the ML models
+    // If there are matches and this is a lost item, notify the user
+    if (item.itemType === 'lost' && potentialMatches.length > 0) {
+      // Send notification to user about potential matches
+      await notificationController.notifyUser(
+        item.userId,
+        'Potential Match Found',
+        `We've found ${potentialMatches.length} potential matches for your lost item "${item.title}". Check them out!`,
+        'item_found',
+        item.id
+      );
+    }
     
     return res.status(200).json({
       matches: potentialMatches,
@@ -156,5 +210,86 @@ exports.findMatches = async (req, res) => {
   } catch (error) {
     console.error('Error finding matches:', error);
     return res.status(500).json({ message: 'Failed to find matches', error: error.message });
+  }
+};
+
+// Claim an item
+exports.claimItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { claimantId, claimantName, claimantContact } = req.body;
+    
+    const item = await Item.findByPk(id);
+    
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+    
+    // Update item status to claimed
+    await Item.update(
+      { 
+        status: 'claimed',
+        claimantInfo: JSON.stringify({
+          id: claimantId,
+          name: claimantName,
+          contact: claimantContact,
+          claimedAt: new Date().toISOString()
+        })
+      },
+      { where: { id } }
+    );
+    
+    const updatedItem = await Item.findByPk(id);
+    
+    // Send notification to the item owner
+    await notificationController.notifyUser(
+      item.userId,
+      'Item Claimed',
+      `Your ${item.itemType === 'found' ? 'found' : 'lost'} item "${item.title}" has been claimed by ${claimantName}.`,
+      'item_claimed',
+      item.id
+    );
+    
+    return res.status(200).json(updatedItem);
+  } catch (error) {
+    console.error('Error claiming item:', error);
+    return res.status(500).json({ message: 'Failed to claim item', error: error.message });
+  }
+};
+
+// Helper function to handle status change notifications
+const handleStatusChangeNotification = async (item, previousStatus) => {
+  try {
+    switch (item.status) {
+      case 'verified':
+        await notificationController.notifyUser(
+          item.userId,
+          'Item Verified',
+          `Your ${item.itemType === 'lost' ? 'lost' : 'found'} item "${item.title}" has been verified by an administrator.`,
+          'item_verified',
+          item.id
+        );
+        break;
+      case 'claimed':
+        await notificationController.notifyUser(
+          item.userId,
+          'Item Claimed',
+          `Your ${item.itemType === 'found' ? 'found' : 'lost'} item "${item.title}" has been claimed.`,
+          'item_claimed',
+          item.id
+        );
+        break;
+      case 'resolved':
+        await notificationController.notifyUser(
+          item.userId,
+          'Item Resolved',
+          `Your ${item.itemType === 'lost' ? 'lost' : 'found'} item "${item.title}" has been marked as resolved.`,
+          'system',
+          item.id
+        );
+        break;
+    }
+  } catch (error) {
+    console.error('Error sending status change notification:', error);
   }
 };

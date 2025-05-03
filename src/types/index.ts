@@ -47,3 +47,27 @@ export interface User {
   phone?: string;
   isAdmin: boolean;
 }
+
+// Support message interface
+export interface SupportMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+  status: "read" | "unread";
+}
+
+// Notification interface
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: "item_found" | "item_claimed" | "item_verified" | "system";
+  itemId?: string;
+  createdAt: string;
+  read: boolean;
+}
