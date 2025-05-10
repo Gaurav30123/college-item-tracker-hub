@@ -42,6 +42,8 @@ app.listen(PORT, async () => {
     await sequelize.sync({ force: false });
     console.log('Database synchronized');
   } catch (error) {
-    console.error('Unable to connect to the database:', error);
+    console.error('Unable to connect to the database:', error.message);
+    console.error('Please check your .env file and ensure database credentials are correct.');
+    console.error('Database connection will be retried when API endpoints are accessed.');
   }
 });
