@@ -3,7 +3,7 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 // Ensure DB credentials are defined with fallbacks
-const dbName = process.env.DB_NAME || 'lost_and_found';
+const dbName = process.env.DB_NAME || 'lostAndFound';  // Changed to match your database name
 const dbUser = process.env.DB_USER || 'postgres';
 const dbPass = process.env.DB_PASS ? String(process.env.DB_PASS) : ''; // Explicitly convert to string
 const dbHost = process.env.DB_HOST || 'localhost';
