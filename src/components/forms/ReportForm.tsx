@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,6 +72,14 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
     }
   };
 
+  // Generate a UUID for testing purposes
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   // Form submission handler
   const handleSubmit = async (data: ReportItemFormValues) => {    
     setIsSubmitting(true);
@@ -82,10 +91,13 @@ export default function ReportForm({ defaultType = "lost", onSubmit }: ReportFor
         imageUrl = await uploadImage(imageFile);
       }
       
+      // Use a proper UUID format instead of a string
+      const tempUserId = generateUUID();
+      
       // Make sure all required fields are present for the submission
       const submissionData = {
         ...data,
-        userId: "user-123",
+        userId: tempUserId, // Using UUID format instead of "user-123"
         image: imageUrl || imagePreview || undefined,
         title: data.title,
         description: data.description,
