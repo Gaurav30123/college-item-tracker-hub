@@ -9,8 +9,12 @@ const Notification = sequelize.define('Notification', {
     primaryKey: true
   },
   userId: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   },
   title: {
     type: DataTypes.STRING,
@@ -25,8 +29,12 @@ const Notification = sequelize.define('Notification', {
     allowNull: false
   },
   itemId: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Items',
+      key: 'id'
+    }
   },
   read: {
     type: DataTypes.BOOLEAN,
