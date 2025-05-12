@@ -41,8 +41,12 @@ const Item = sequelize.define('Item', {
     allowNull: false
   },
   userId: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: DataTypes.UUID,  // Changed from STRING to UUID to match User.id
+    allowNull: false,
+    references: {
+      model: 'Users',  // Reference the Users table
+      key: 'id'        // Reference the id column in Users table
+    }
   },
   image: {
     type: DataTypes.STRING,

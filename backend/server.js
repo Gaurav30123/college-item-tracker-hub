@@ -42,7 +42,7 @@ app.listen(PORT, async () => {
     await sequelize.sync({ force: true });
     console.log('Database synchronized - tables created successfully!');
   } catch (error) {
-    console.error('Unable to connect to the database:', error.message);
+    console.error('Unable to connect to the database:', error);
     console.error('Please check your .env file and ensure database credentials are correct.');
     console.error('Make sure your database name, username, and password match your PostgreSQL settings.');
     console.error('Database connection will be retried when API endpoints are accessed.');
